@@ -117,10 +117,10 @@ def get_fill_rate(*placed_boxes):
 
 def place(box, placed_boxes, extreme_points):
     best_score = 0
-
+    original_box = box
     # check every rotation
     for rotation in range(0,6):
-        box = rotate(box, rotation)
+        box = rotate(original_box, rotation)
 
         for point in extreme_points:
             if box.x + point.x < 1000 and box.y + point.y < 600:
@@ -129,22 +129,24 @@ def place(box, placed_boxes, extreme_points):
 
                     if best_score < fill_rate:
                         best_score = fill_rate
+                        best_box = box
                         best_point = point
     if best_score == 0:
+        best_box = original_box
         height = get_convex_hull(placed_boxes).z
         extreme_points.append(Point(0, 0, height))
         best_point = Point(0, 0, height)
 
     #  add new extreme points
-    extreme_points.append(Point(best_point.x + box.x, best_point.y, best_point.z))
-    extreme_points.append(Point(best_point.x, best_point.y + box.y, best_point.z))
-    extreme_points.append(Point(best_point.x, best_point.y, best_point.z + box.z))
+    extreme_points.append(Point(best_point.x + best_box.x, best_point.y, best_point.z))
+    extreme_points.append(Point(best_point.x, best_point.y + best_box.y, best_point.z))
+    extreme_points.append(Point(best_point.x, best_point.y, best_point.z + best_box.z))
 
     # remove used extreme point from the list
     extreme_points.remove(best_point)
 
     # return box placement
-    return (box, best_point)
+    return (best_box, best_point)
 
 def run(sample):
     start = datetime.datetime.now()
