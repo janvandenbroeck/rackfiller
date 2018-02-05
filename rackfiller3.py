@@ -115,27 +115,56 @@ def get_fill_rate(*placed_boxes):
 
     return volume / hull_volume
 
-def place(box, placed_boxes, extreme_points):
+def place(box, placed_boxes, extreme_points, search_with_gravity=True):
     best_score = 0
     original_box = box
+
     # check every rotation
     for rotation in range(0,6):
         box = rotate(original_box, rotation)
 
         for point in extreme_points:
-            if box.x + point.x < 1000 and box.y + point.y < 600:
-                if not check_collisions(box, point, placed_boxes):
-                    fill_rate = get_fill_rate((box, point), *placed_boxes)
+            all_points = []
+            all_points.append(point)
+
+            if search_with_gravity:
+            # check for all points pulled towards origin
+                if point.x != 0:
+                    all_points.append(Point(0, point.y, point.z))
+                    # iterate over ExistingBOXes
+                    for ebox, loc in placed_boxes:
+                        if ebox.x + loc.x < point.x:
+                            all_points.append(Point(loc.x + ebox.x, point.y, point.z))
+
+                if point.y != 0:
+                    all_points.append(Point(point.x, 0, point.z))
+                    for ebox, loc in placed_boxes:
+                        if ebox.y + loc.y < point.y:
+                            all_points.append(Point(point.x, loc.y + ebox.y, point.z))
+
+                if point.z != 0:
+                    all_points.append(Point(point.x, point.y, 0))
+                    for ebox, loc in placed_boxes:
+                        if ebox.z + loc.z < point.z:
+                            all_points.append(Point(point.x, point.y, loc.z + ebox.z))
+
+            for trial_point in all_points:
+                if box.x + trial_point.x < 1000 and \
+                   box.y + trial_point.y < 600 and  \
+                   not check_collisions(box, trial_point, placed_boxes):
+                    fill_rate = get_fill_rate((box, trial_point), *placed_boxes)
 
                     if best_score < fill_rate:
                         best_score = fill_rate
                         best_box = box
-                        best_point = point
+                        best_point = trial_point
+                        best_extreme_point = point
+
     if best_score == 0:
         best_box = original_box
         height = get_convex_hull(placed_boxes).z
         extreme_points.append(Point(0, 0, height))
-        best_point = Point(0, 0, height)
+        best_point = best_extreme_point = Point(0, 0, height)
 
     #  add new extreme points
     extreme_points.append(Point(best_point.x + best_box.x, best_point.y, best_point.z))
@@ -143,7 +172,7 @@ def place(box, placed_boxes, extreme_points):
     extreme_points.append(Point(best_point.x, best_point.y, best_point.z + best_box.z))
 
     # remove used extreme point from the list
-    extreme_points.remove(best_point)
+    extreme_points.remove(best_extreme_point)
 
     # return box placement
     return (best_box, best_point)
@@ -153,12 +182,12 @@ def run(sample):
 
     best_usage = 0
     best_set = []
-    new_boxes = load_file('boxes.txt')
+    loaded_boxes = load_file('boxes.txt')
 
     for trial in range(sample):
         placed_boxes = []
         extreme_points = [Point(0, 0, 0)]
-        boxes = new_boxes.copy()
+        boxes = loaded_boxes.copy()
 
         random.shuffle(boxes)
 
