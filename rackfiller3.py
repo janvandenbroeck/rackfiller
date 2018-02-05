@@ -123,12 +123,11 @@ def place(box, placed_boxes, extreme_points):
         box = rotate(box, rotation)
 
         for point in extreme_points:
-            fill_rate = get_fill_rate((box, point), *placed_boxes)
+            if box.x + point.x < 1000 and box.y + point.y < 600:
+                if not check_collisions(box, point, placed_boxes):
+                    fill_rate = get_fill_rate((box, point), *placed_boxes)
 
-            if best_score < fill_rate:
-                #within shelf?
-                if box.x + point.x < 1000 and box.y + point.y < 600:
-                    if not check_collisions(box, point, placed_boxes):
+                    if best_score < fill_rate:
                         best_score = fill_rate
                         best_point = point
     if best_score == 0:
@@ -181,4 +180,4 @@ def run(sample):
 
 
 if __name__ == '__main__':
-    run(1000)
+    run(10000)
