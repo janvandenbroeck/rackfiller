@@ -6,15 +6,9 @@ Created on May 14, 2011
 '''
 
 import random
-best_usage = 0
 
-file = open("boxes.txt")
-rawboxes_source = file.readlines()
-file.close()
-length_of_file = len(rawboxes_source)
+def initialize(rawboxes_source):
 
-def initialize():
-    
     rawboxes = rawboxes_source
 
     result = []
@@ -24,10 +18,10 @@ def initialize():
         for index2 in xrange(0,len(result[index])):
             result[index][index2] = int(result[index][index2])                          # convert to integer
     return result
-    
+
 def rotate(list,number):
     result = [0,0,0,0,0]
-    
+
     if number == 0:                     # X+Y
         for each in xrange(0,len(list)):
             result[each] = list [each]
@@ -65,19 +59,19 @@ def rotate(list,number):
     else:
         print("Error occured: rotation value not valid")
         quit()
-            
+
     return result
 
 def place(box):
     best_index = 2**50                                                              # start with high index
-    
+
     current_height = get_convex_hull(placed_boxes)[2]                           # get the heigth of the convex hull until now
     if len(extreme_points) == 0:
         extreme_points.append((0,0,current_height))
-    
+
     for rotation in xrange(0,6):                                                 #check every rotation
         box = rotate(box,rotation)
-        for point_index in xrange(0,len(extreme_points)):                             # run over every extreme point 
+        for point_index in xrange(0,len(extreme_points)):                             # run over every extreme point
             if best_index > get_index(box,extreme_points[point_index]):            # to check if the placement of the box in this point has a lower index
                 if box[1] + extreme_points[point_index][0] < 1000 and box[2] + extreme_points[point_index][1] < 600: #within shelf?
                     if not check_collisions(box,extreme_points[point_index]):         #Does it collide with other boxes?
@@ -86,18 +80,18 @@ def place(box):
     if best_index == 2**50:                                                           #failsafe: if no new best index is discovered over every rotation and point that does not collide
         extreme_points.append((0,0,current_height))                                    #place the box on top at origin
         best_point_index = -1
-                        
+
     #covert point index to point (coordinates)
     best_point = extreme_points[best_point_index]
-    
+
     #  add new extreme points
     extreme_points.append((extreme_points[best_point_index][0]+box[1] , extreme_points[best_point_index][1] , extreme_points[best_point_index][2]))
     extreme_points.append((extreme_points[best_point_index][0] , extreme_points[best_point_index][1]+box[2] , extreme_points[best_point_index][2]))
     extreme_points.append((extreme_points[best_point_index][0] , extreme_points[best_point_index][1] , extreme_points[best_point_index][2]+box[3]))
-    
+
     # remove used extreme point from the list
     del extreme_points[best_point_index]
-    
+
     # return box placement
     return [box,best_point]
 
@@ -116,20 +110,20 @@ def check_collisions(box,point):
         boundx = [placed_boxes[index][1][0],placed_boxes[index][1][0] + placed_boxes[index][0][1]]
         boundy = [placed_boxes[index][1][1],placed_boxes[index][1][1] + placed_boxes[index][0][2]]
         boundz = [placed_boxes[index][1][2],placed_boxes[index][1][2] + placed_boxes[index][0][3]]
-    
+
         if (point[0] < boundx[1] and point[0]+box[1] > boundx[0]) and (point[1] < boundy[1] and point[1]+box[2] > boundy[0]) and (point[2] < boundz[1] and point[2]+box[3] > boundz[0]):
             collision = True
-        
+
         if (point[0] < boundx[0] and point[0]+box[1] < boundx[1]) and (point[1] < boundy[0] and point[1]+box[2] < boundy[1]) and (point[2] < boundz[0] and point[2]+box[3] < boundz[1]):
             collision = True
-                
+
     return collision
-    
+
 def get_convex_hull(placed_boxes):
     convex_L = 0
     convex_W = 0
     convex_H = 0
-    
+
     for box in placed_boxes:
         if box[0][1]+box[1][0] > convex_L:                  # if placement+value of LENGTH does exceed current convex hull
             convex_L = box[0][1]+box[1][0]                  # coordinate+value is new convex hull-point
@@ -147,8 +141,8 @@ def get_convex_hull(placed_boxes):
 
 def get_index(box,point):
     convex_hull = get_convex_hull(placed_boxes)
-    
-    index = max(convex_hull[0],box[1]+point[0]) * max(convex_hull[1],box[2]+point[1]) * max(convex_hull[2],box[3]+point[2])**3
+
+    index = max(convex_hull[0], box[1]+point[0]) * max(convex_hull[1], box[2]+point[1]) * max(convex_hull[2],box[3]+point[2])**3
 
     volume = box[1] * box[2] * box[3]
     for placed_box in placed_boxes:
@@ -156,43 +150,46 @@ def get_index(box,point):
     index = float(index) / float(volume)
 
     return index
-    
-iter = 0
 
-for trial in xrange(0,10000):                                                           # 10000 random interations
-    placed_boxes = []
-    extreme_points = [(0,0,0)]
-    unplaced_boxes = initialize()
-    iter += 1
-    
-    for each in xrange(0,length_of_file):
-        index = random.randint(0,length_of_file-each-1)
-        if get_weight(placed_boxes) + unplaced_boxes[index][4] < 50000:
-            placed_boxes.append(place(unplaced_boxes[index]))
-            del unplaced_boxes[index]
-        else:
-            continue
 
-    convex_hull = get_convex_hull(placed_boxes)
-    usedvolume = convex_hull[0]*convex_hull[1]*convex_hull[2]
-    actualvolume = 0
+def run(sample):
+    iter = 0
+    best_usage = 0
 
-    for box in placed_boxes:
-        actualvolume += box[0][1]*box[0][2]*box[0][3]
-    
-    usage = (actualvolume*100)/usedvolume
-    if usage > best_usage:
-        best_usage = usage
-        best_set = placed_boxes
-    print("iteration %d" % (iter))
-    print('boxes: %r \n' % (placed_boxes))
+    file = open("boxes.txt")
+    rawboxes_source = file.readlines()
+    file.close()
+    length_of_file = len(rawboxes_source)
+
+    for trial in xrange(0,sample):                                                           # 10000 random interations
+        global placed_boxes
+        placed_boxes = []
+        global extreme_points
+        extreme_points = [(0,0,0)]
+        unplaced_boxes = initialize(rawboxes_source)
+        iter += 1
+
+        for each in xrange(0,length_of_file):
+            index = random.randint(0,length_of_file-each-1)
+            if get_weight(placed_boxes) + unplaced_boxes[index][4] < 50000:
+                placed_boxes.append(place(unplaced_boxes[index]))
+                del unplaced_boxes[index]
+            else:
+                continue
+
+        convex_hull = get_convex_hull(placed_boxes)
+        usedvolume = convex_hull[0]*convex_hull[1]*convex_hull[2]
+        actualvolume = 0
+
+        for box in placed_boxes:
+            actualvolume += box[0][1]*box[0][2]*box[0][3]
+
+        usage = (actualvolume*100)/usedvolume
+        if usage > best_usage:
+            best_usage = usage
+            best_set = placed_boxes
     print("usage: %d" % (usage))
     print("best usage: %d \n" % (best_usage))
-    print("\n")
-    
-print("FINAL RESULT")
-print(best_usage)
-print(iter)
-print('boxes: %r \n' % (best_set))
-raw_input()
-        
+
+if __name__ == '__main__':
+    run(1000)
