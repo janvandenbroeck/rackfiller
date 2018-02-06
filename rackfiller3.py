@@ -198,6 +198,7 @@ def run(sample):
         usage = get_fill_rate(*placed_boxes)
 
         if usage > best_usage:
+            print("iter {} best usage: {}".format(trial, usage))
             best_usage = usage
             best_set = placed_boxes
 
@@ -211,4 +212,4 @@ def run(sample):
 
 
 if __name__ == '__main__':
-    run(10000)
+    run(100000)
